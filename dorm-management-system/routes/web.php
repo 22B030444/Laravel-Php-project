@@ -46,9 +46,9 @@ Route::middleware(['auth','admin'])->prefix('admin')->group(function () {
     Route::get('/dashboard/users/create', [AdminUserController::class, 'create'])->name('admin.users.create');
     Route::post('/dashboard/users', [AdminUserController::class, 'store'])->name('admin.users.store');
     Route::get('/dashboard/users', [AdminUserController::class, 'index'])->name('admin.users.index');
-    Route::resource('/news', NewsAdminController::class)->names('admin.news');
+    Route::resource('/dashboard/news', NewsAdminController::class)->names('admin.news');
     Route::delete('/dashboard/users/{id}', [AdminUserController::class, 'destroy'])->name('admin.users.destroy');
-    Route::get('/users/{id}/json', [AdminUserController::class, 'getUserJson']);
+    Route::get('/dashboard/users/{id}/json', [AdminUserController::class, 'getUserJson']);
 });
 
 // Менеджерская панель
@@ -59,6 +59,8 @@ Route::middleware(['auth','role:manager'])->prefix('manager')->group(function ()
     Route::get('/dashboard/users', [ManagerUserController::class, 'index'])->name('manager.users.index');
     Route::delete('/dashboard/users/{id}', [ManagerUserController::class, 'destroy'])->name('manager.users.destroy');
     Route::put('/dashboard/users/{id}', [ManagerUserController::class, 'update'])->name('manager.users.update');
+    Route::get('/dashboard/users/{userId}/documents', [DocumentController::class, 'getUserDocuments']);
+    Route::get('/dashboard/documents/{document}/download', [DocumentController::class, 'downloadForManager']);
     Route::get('/users/{id}/json', [ManagerUserController::class, 'getUserJson']);
     Route::get('/dashboard/requests', [BookingController::class, 'indexForManager'])->name('manager.requests');
     Route::get('/dashboard/requests/{id}/accept', [BookingController::class, 'accept'])->name('booking.accept');
@@ -85,6 +87,7 @@ Route::middleware(['auth','role:student'])->prefix('student')->group(function ()
     Route::get('/payment/callback', [KaspiPaymentController::class, 'callback'])->name('payment.callback');
     Route::get('/payment/status/{id}', [KaspiPaymentController::class, 'checkStatus'])->name('payment.status');
     Route::post('personal/document/upload', [DocumentController::class, 'upload'])->name('document.upload');
+    Route::get('personal/document/download/{document}', [DocumentController::class, 'download'])->name('document.download');
     Route::post('/personal/booking/store', [BookingController::class, 'store'])->name('booking.store');
     Route::post('/personal/booking/change-room', [BookingController::class, 'changeRoom'])->name('booking.changeRoom');
     Route::post('/personal/sports/store', [GymBookingController::class, 'store'])->name('sports.store');
@@ -119,13 +122,13 @@ Route::middleware(['auth','role:student'])->prefix('student')->group(function ()
         Route::get('/dashboard/requests/{id}', [EmployeeController::class, 'getRequest'])->name('employee.getRequest');});
 
 
-    Route::middleware(['language'])->group(function (){
-        Route::post('/language-switch', [LanguageController::class, 'languageSwitch'])->name('language.switch');
-    });
-    Route::middleware('auth')->group(function () {
-        Route::get('/notifications', [NotificationController::class, 'getNotifications']);
-        Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
-    });
+Route::middleware(['language'])->group(function (){
+    Route::post('/language-switch', [LanguageController::class, 'languageSwitch'])->name('language.switch');
+});
+Route::middleware('auth')->group(function () {
+    Route::get('/notifications', [NotificationController::class, 'getNotifications']);
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+});
 
 
 

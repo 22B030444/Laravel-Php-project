@@ -306,7 +306,7 @@
             document.getElementById('edit-news-section').style.display = 'block';
             document.getElementById('edit-title').value = title;
             document.getElementById('edit-content').value = content;
-            document.getElementById('editNewsForm').action = '{{ url("admin/news") }}/' + id;
+            document.getElementById('editNewsForm').action = '{{ url("admin/dashboard/news") }}/' + id;
         }
         function cancelEdit() {
             document.getElementById('edit-news-section').style.display = 'none';
@@ -320,7 +320,7 @@
         }
         async function viewUserDetail(userId) {
             hideAllSections();
-            let url = '/admin/users/' + userId + '/json';
+            let url = '/admin/dashboard/users/' + userId + '/json';
             try {
                 let response = await fetch(url);
                 if (!response.ok) {

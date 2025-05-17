@@ -253,4 +253,14 @@ return [
     'price_low_to_high' => 'Арзанынан',
     'price_high_to_low' => 'Қымбатынан',
     'search' => 'Іздеу',
+    'document_type' => 'Құжат түрі',
+    'select_document_type' => 'Құжат түрін тандаңыз',
+    'certificate' => 'Справка',
+    'identity_document' => 'Удостоверение личности',
+    'quota_document' => 'Документ о квоте',
+    'other' => 'Басқа',
+    'download' => 'Скачать',
+    'document_uploaded' => 'Документ успешно загружен',
+    'upload_date' => 'Күні',
+    'expel_student' => 'Выселить студента'
 ];

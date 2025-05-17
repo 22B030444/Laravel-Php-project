@@ -13,6 +13,7 @@ class Document extends Model
         'student_id',
         'file_name',
         'file_path',
+        'type'
     ];
 
     public function student()

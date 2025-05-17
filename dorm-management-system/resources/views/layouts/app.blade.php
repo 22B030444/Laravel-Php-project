@@ -257,6 +257,152 @@
         display: none;
         margin-top: 10px;
     }
+    /* Стили для уведомлений */
+    .notification-badge {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        background-color: #dc3545;
+        color: white;
+        border-radius: 50%;
+        padding: 2px 6px;
+        font-size: 12px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .notification-wrapper {
+        position: relative;
+        z-index: 1000;
+    }
+
+    #notifications-panel {
+        position: absolute;
+        top: calc(100% + 10px);
+        right: -10px;
+        width: 350px;
+        max-height: 500px;
+        background: white;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        border-radius: 12px;
+        z-index: 1000;
+        display: none;
+        overflow-y: auto;
+        animation: slideDown 0.3s ease-out;
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .notifications-list {
+        padding: 8px 0;
+    }
+
+    .notification-item {
+        padding: 15px 20px;
+        border-bottom: 1px solid #eef0f2;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .notification-item:last-child {
+        border-bottom: none;
+    }
+
+    .notification-item.unread {
+        background-color: #f0f7ff;
+        position: relative;
+    }
+
+    .notification-item.unread::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background-color: #0d6efd;
+        border-radius: 2px;
+    }
+
+    .notification-item:hover {
+        background-color: #f8f9fa;
+        transform: translateX(5px);
+    }
+
+    .notification-title {
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 5px;
+        font-size: 14px;
+    }
+
+    .notification-message {
+        color: #666;
+        font-size: 13px;
+        line-height: 1.4;
+        margin-bottom: 8px;
+    }
+
+    .notification-time {
+        font-size: 11px;
+        color: #999;
+        display: flex;
+        align-items: center;
+    }
+
+    .notification-time::before {
+        content: '\f017';
+        font-family: 'Font Awesome 5 Free';
+        margin-right: 5px;
+        font-size: 10px;
+    }
+
+    /* Стили для скроллбара в панели уведомлений */
+    #notifications-panel::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    #notifications-panel::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 3px;
+    }
+
+    #notifications-panel::-webkit-scrollbar-thumb {
+        background: #B0A5D7;
+        border-radius: 3px;
+    }
+
+    #notifications-panel::-webkit-scrollbar-thumb:hover {
+        background: #9285c7;
+    }
+
+    /* Пустое состояние */
+    .notification-item.empty {
+        text-align: center;
+        color: #999;
+        padding: 30px 20px;
+        font-style: italic;
+    }
+
+    /* Адаптивность */
+    @media (max-width: 768px) {
+        #notifications-panel {
+            position: fixed;
+            top: 70px;
+            left: 10px;
+            right: 10px;
+            width: auto;
+            max-height: calc(100vh - 80px);
+        }
+    }
 
     /* Анимации */
     @keyframes modalFadeIn {
@@ -431,17 +577,16 @@
 
                 notificationsList.innerHTML = '';
                 let unreadCount = 0;
+
                 if (notifications.length === 0) {
                     notificationsList.innerHTML = '<div class="notification-item">Нет уведомлений</div>';
                     return;
                 }
 
-
                 notifications.forEach(notification => {
                     if (!notification.read_at) {
                         unreadCount++;
                     }
-
                     const notificationElement = document.createElement('div');
                     notificationElement.className = `notification-item ${!notification.read_at ? 'unread' : ''}`;
                     notificationElement.innerHTML = `
@@ -449,23 +594,23 @@
                     <div class="notification-message">${notification.data.message}</div>
                     <div class="notification-time">${new Date(notification.created_at).toLocaleString()}</div>
                 `;
-
                     notificationElement.addEventListener('click', async () => {
-                        if (!notification.read_at) {
-                            await fetch(`/notifications/${notification.id}/read`, {
-                                method: 'POST',
-                                headers: {
-                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                                }
-                            });
-                            notificationElement.classList.remove('unread');
-                            updateNotificationBadge(--unreadCount);
-                        }
-                        if (notification.data.url) {
-                            window.location.href = notification.data.url;
+                        try {
+                            if (!notification.read_at) {
+                                await fetch(`/notifications/${notification.id}/read`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                                    }
+                                });
+                                notificationElement.classList.remove('unread');
+                                updateNotificationBadge(--unreadCount);
+                            }
+                            window.location.href = "{{ route('student.personal') }}";
+                        } catch (error) {
+                            console.error('Ошибка при обработке уведомления:', error);
                         }
                     });
-
                     notificationsList.appendChild(notificationElement);
                 });
 
@@ -498,31 +643,35 @@
                 notificationsPanel.style.display = 'none';
             }
         });
+
+        // Инициализация уведомлений при загрузке страницы
         loadNotifications();
     });
-
-    function openNewsModal(newsId) {
-        const news = @json($newsList);
-        const selectedNews = news.find(item => item.id === newsId);
-        const modal = document.getElementById('newsModal');
-
-        document.getElementById('modalTitle').innerText = selectedNews.title;
-        const modalImage = document.getElementById('modalImage');
-        modalImage.src = selectedNews.image ? '/storage/' + selectedNews.image : '';
-        modalImage.style.display = selectedNews.image ? 'block' : 'none';
-
-        document.getElementById('modalContent').innerText = selectedNews.content;
-        document.getElementById('modalDate').innerText = new Date(selectedNews.created_at).toLocaleString('ru-RU');
-
-        modal.style.display = 'flex';
-        document.body.style.overflow = 'hidden'; // Запретить прокрутку фона
-
-        // Плавное появление
-        requestAnimationFrame(() => {
-            modal.style.opacity = '1';
-        });
+    function showNews() {
+        hideAllSections();
+        document.getElementById('see-news-section').style.display = 'block';
     }
+    function openNewsModal(newsId) {
+    const news = @json($newsList);
+    const selectedNews = news.find(item => item.id === newsId);
+    const modal = document.getElementById('newsModal');
 
+    document.getElementById('modalTitle').innerText = selectedNews.title;
+    const modalImage = document.getElementById('modalImage');
+    modalImage.src = selectedNews.image ? '/storage/' + selectedNews.image : '';
+    modalImage.style.display = selectedNews.image ? 'block' : 'none';
+
+    document.getElementById('modalContent').innerText = selectedNews.content;
+    document.getElementById('modalDate').innerText = new Date(selectedNews.created_at).toLocaleString('ru-RU');
+
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden'; // Запретить прокрутку фона
+
+    // Плавное появление
+    requestAnimationFrame(() => {
+        modal.style.opacity = '1';
+    });
+}
     function closeNewsModal() {
         const modal = document.getElementById('newsModal');
         modal.style.opacity = '0';
@@ -532,24 +681,24 @@
             document.body.style.overflow = ''; // Восстановить прокрутку
         }, 300);
     }
-
+    function hideAllSections() {
+        const sections = document.querySelectorAll('.main-content');
+        sections.forEach(section => {
+            section.style.display = 'none';
+        });
+    }
     // Закрытие по клику вне модального окна
     document.getElementById('newsModal').addEventListener('click', function(e) {
         if (e.target === this) {
             closeNewsModal();
         }
     });
-
     // Закрытие по нажатию Escape
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             closeNewsModal();
         }
     });
-    function showNews() {
-        hideAllSections();
-        document.getElementById('see-news-section').style.display = 'block';
-    }
     document.addEventListener('DOMContentLoaded', function() {
         const avatarWrapper = document.querySelector('.avatar-wrapper');
         const avatarDropdown = document.querySelector('.avatar-dropdown');
@@ -564,7 +713,6 @@
             avatarDropdown.style.display = 'none';
         });
     });
-
 </script>
 </body>
 

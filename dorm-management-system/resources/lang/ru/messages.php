@@ -1,5 +1,4 @@
 <?php
-
 return [
     'welcome' => 'Добро пожаловать в систему управления общежитием!',
     'news' => 'Новости',
@@ -280,6 +279,15 @@ return [
     'price_low_to_high' => 'От дешёвых',
     'price_high_to_low' => 'От дорогих',
     'search' => 'Найти',
-
+    'document_type' => 'Тип документа',
+    'select_document_type' => 'Выберите тип документа',
+    'certificate' => 'Справка',
+    'identity_document' => 'Удостоверение личности',
+    'quota_document' => 'Документ о квоте',
+    'other' => 'Другое',
+    'download' => 'Скачать',
+    'document_uploaded' => 'Документ успешно загружен',
+    'upload_date' => 'Дата',
+    'expel_student' => 'Выселить студента'
 ];
 

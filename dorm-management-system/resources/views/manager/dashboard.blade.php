@@ -195,8 +195,6 @@
        <button onclick="showUsers()" class="btn-primary" style="margin-bottom: 20px;">
            <i class="fas fa-arrow-left"></i> {{ __('messages.back') }}
        </button>
-
-       <h2>{{ __('messages.user_details') }}</h2>
        <div class="user-details-card">
            <!-- Фото -->
            <div class="user-photo" id="user-photo">
@@ -206,7 +204,7 @@
            <div class="user-info">
                <h2 id="detail-name">{{ __('messages.full_name') }}</h2>
                <div class="status">{{ __('messages.status') }}: <span id="detail-role"></span></div>
-               <div class="personal-location">
+               <div class="personal-location" id="user-location">
                    @if($user->acceptedBooking)
                        {{ __('messages.building') }}: {{ $user->acceptedBooking->building->name }}<br>
                        {{ __('messages.address') }}: {{ $user->acceptedBooking->building->address }}<br>
@@ -244,22 +242,40 @@
                    <div class="actions" style="grid-column: 1 / span 2;">
                        <button type="submit" class="btn-success">{{ __('messages.save_changes') }}</button>
                    </div>
+
                </form>
 
-               <!-- Кнопка "Удалить пользователя" -->
-               <div class="mt-3">
+               <!-- Кнопки действий -->
+               <div class="user-actions mt-3" id="userActions" style="display: none;">
+                   <!-- Кнопка "Удалить/Выселить студента" -->
                    <form id="userDeleteForm" action="" method="POST" style="display: inline;">
                        @csrf
                        @method('DELETE')
                        <button type="submit" class="btn-danger" id="deleteButton">
-                           {{ __('messages.delete_user') }}
+                           {{ __('messages.expel_student') }}
                        </button>
                    </form>
+                   <!-- Кнопка "Документы" -->
+                   <button type="button" class="btn-primary" id="documentsButton" onclick="showDocuments()">
+                       {{ __('messages.documents') }}
+                   </button>
                </div>
+
            </div>
        </div>
    </div>
-   <!-- СЕКЦИЯ заявки на заселение -->
+    <!-- Добавьте модальное окно для документов -->
+    <div id="documentsModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeDocumentsModal()">&times;</span>
+            <h3>{{ __('messages.documents') }}</h3>
+            <div id="documents-list">
+                <!-- Документы будут добавлены через JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- СЕКЦИЯ заявки на заселение -->
    <div class="main-content" id="request-section" style="display: none;">
        <h2>{{ __('messages.requests') }}</h2>
        @if(session('success'))
@@ -295,11 +311,6 @@
                           style="color: red; text-decoration: none;">
                            {{ __('messages.reject') }}
                        </a>
-{{--                       <a href="{{ route('booking.reject', $req->id) }}"--}}
-{{--                          style="color: red; text-decoration: none;">--}}
-{{--                           {{ __('messages.in_review') }}--}}
-{{--                       </a>--}}
-
                    </td>
                </tr>
            @endforeach
@@ -323,11 +334,9 @@
             showUsers();
             @elseif(session('successType') === 'request_accepted')
             showRequests();
-
             @endif
         });
-        // В функции viewUserDetail, после установки action для формы обновления:
-        // В функции viewUserDetail, добавьте эту логику:
+
         const deleteForm = document.getElementById('userDeleteForm');
         if (data.role === 'student' && '{{ auth()->user()->isAdmin() }}' === '1') {
             deleteForm.style.display = 'block';
@@ -364,20 +373,39 @@
                 document.getElementById('detail-user_id').value = data.user_id || '';
                 document.getElementById('detail-phone').value = data.phone || '';
                 document.getElementById('detail-email').value = data.email || '';
+                const locationElement = document.getElementById('user-location');
+                if (data.role === 'student') {
+                    if (data.accepted_booking) {
+                        locationElement.innerHTML = `
+                    <p><strong>{{ __('messages.building') }}:</strong> ${data.accepted_booking.building.name}</p>
+                    <p><strong>{{ __('messages.address') }}:</strong> ${data.accepted_booking.building.address}</p>
+                    <p><strong>{{ __('messages.floor') }}:</strong> ${data.accepted_booking.room.floor}</p>
+                    <p><strong>{{ __('messages.room') }}:</strong> ${data.accepted_booking.room.room_number}</p>
+                `;
+                    } else {
+                        locationElement.innerHTML = `<p>{{ __('messages.not_settled') }}</p>`;
+                    }
+                }
                 document.getElementById('userUpdateForm').action = '/manager/dashboard/users/' + data.id;
                 document.getElementById('userDeleteForm').action = '/manager/dashboard/users/' + data.id;
-
-                // Показываем/скрываем кнопку удаления
+                const userActions = document.getElementById('userActions');
                 const deleteForm = document.getElementById('userDeleteForm');
-                if (data.role === 'student' && {{ auth()->user()->isAdmin() ? 'true' : 'false' }}) {
-                    deleteForm.style.display = 'block';
-                    document.getElementById('deleteButton').textContent = '{{ __("messages.delete_user") }}';
-                } else {
-                    deleteForm.style.display = 'none';
-                }
+                const documentsButton = document.getElementById('documentsButton');
+                userActions.style.display = 'none';
+                deleteForm.style.display = 'none';
+                documentsButton.style.display = 'none';
 
+                if ((data.role === 'student') ) {
+                    userActions.style.display = 'block';
+                    if ({{ auth()->user()->isAdmin() ? 'true' : 'false' }}) {
+                        deleteForm.style.display = 'inline';
+                    }
+                    documentsButton.style.display = 'inline';
+
+                }
                 document.getElementById('user-details-section').style.display = 'block';
             } catch (error) {
+                console.error('Ошибка:', error);
                 alert(error.message);
                 showUsers();
             }
@@ -421,5 +449,61 @@
             document.getElementById('edit-news-section').style.display = 'none';
             document.getElementById('request-section').style.display = 'none';
         }
+        function showDocuments() {
+            const userId = document.getElementById('detail-user_id').value;
+            fetchDocuments(userId);
+            document.getElementById('documentsModal').style.display = 'flex';
+        }
+
+        function closeDocumentsModal() {
+            document.getElementById('documentsModal').style.display = 'none';
+        }
+
+        async function fetchDocuments(userId) {
+            try {
+                const response = await fetch(`/manager/dashboard/users/${userId}/documents`);
+                if (!response.ok) {
+                    throw new Error('Ошибка при загрузке документов');
+                }
+                const documents = await response.json();
+
+                const documentsList = document.getElementById('documents-list');
+                documentsList.innerHTML = '';
+
+                if (documents.length === 0) {
+                    documentsList.innerHTML = '<p>У студента нет загруженных документов</p>';
+                    return;
+                }
+
+                documents.forEach(doc => {
+                    const item = document.createElement('div');
+                    item.className = 'documents-list-item';
+                    item.innerHTML = `
+                <i class="fas fa-file document-icon"></i>
+                <span class="document-name">${doc.file_name}</span>
+                <span class="document-date">${new Date(doc.created_at).toLocaleDateString('ru-RU')}</span>
+            `;
+                    item.onclick = () => downloadDocument(doc.id);
+                    documentsList.appendChild(item);
+                });
+            } catch (error) {
+                console.error('Ошибка:', error);
+                alert('Ошибка при загрузке документов');
+            }
+        }
+        function downloadDocument(documentId) {
+            window.location.href = `/manager/dashboard/documents/${documentId}/download`;
+        }
+        window.onclick = function(event) {
+            const modal = document.getElementById('documentsModal');
+            if (event.target === modal) {
+                closeDocumentsModal();
+            }
+        }
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeDocumentsModal();
+            }
+        });
     </script>
 @endsection

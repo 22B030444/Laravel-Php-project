@@ -251,4 +251,14 @@ return [
     'price_low_to_high' => 'From cheapest',
     'price_high_to_low' => 'From most expensive',
     'search' => 'Search',
+    'document_type' => 'Document type',
+    'select_document_type' => 'Select document type',
+    'certificate' => 'Certificate',
+    'identity_document' => 'Identity document',
+    'quota_document' => 'Quota document',
+    'other' => 'Other',
+    'download' => 'Download',
+    'document_uploaded' => 'Document uploaded',
+    'upload_date' => 'Date',
+    'expel_student' => 'Expel student'
 ];

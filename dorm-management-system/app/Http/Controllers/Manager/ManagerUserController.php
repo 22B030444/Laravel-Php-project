@@ -131,10 +131,50 @@ class ManagerUserController extends Controller
 
     public function getUserJson($id)
     {
-        $user = User::find($id);
+        $user = User::with(['acceptedBooking.building', 'acceptedBooking.room', 'employee'])
+            ->where('id', $id)
+            ->first();
+
         if (!$user) {
             return response()->json(['error' => 'Пользователь не найден'], 404);
         }
-        return response()->json($user);
+
+        $userData = [
+            'id' => $user->id,
+            'user_id' => $user->user_id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'phone' => $user->phone,
+            'photo' => $user->photo,
+            'role' => $user->role,
+            'accepted_booking' => null,
+            'employee_details' => null
+        ];
+
+        // Если это студент и есть активное бронирование
+        if ($user->role === 'student' && $user->acceptedBooking) {
+            $booking = $user->acceptedBooking;
+            $userData['accepted_booking'] = [
+                'building' => [
+                    'name' => $booking->building->name,
+                    'address' => $booking->building->address,
+                ],
+                'room' => [
+                    'floor' => $booking->room->floor,
+                    'room_number' => $booking->room->room_number
+                ]
+            ];
+        }
+
+        // Если это работник
+        if ($user->role === 'employee' && $user->employee) {
+            $userData['employee_details'] = [
+                'position' => $user->employee->position,
+                'department' => $user->employee->department,
+                // Добавьте другие необходимые поля работника
+            ];
+        }
+
+        return response()->json($userData);
     }
 }

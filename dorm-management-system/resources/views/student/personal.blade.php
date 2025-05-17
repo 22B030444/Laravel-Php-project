@@ -197,17 +197,22 @@
                     <th>#</th>
                     <th>{{ __('messages.type') }}</th>
                     <th>{{ __('messages.file') }}</th>
-                    <th>{{ __('messages.valid_until') }}</th>
-                    <th>{{ __('messages.status') }}</th>
+                    <th>{{ __('messages.upload_date') }}</th>
+                    <th>{{ __('messages.actions') }}</th>
                 </tr>
                 </thead>
                 <tbody>
                 @forelse($documents as $doc)
                     <tr>
                         <td>{{ $doc->id }}</td>
-                        <td><a href="{{ asset('storage/' . $doc->file_path) }}" target="_blank">{{ $doc->file_name }}</a></td>
+                        <td>{{ __('messages.' . $doc->type) }}</td>
+                        <td>{{ $doc->file_name }}</td>
                         <td>{{ $doc->created_at->format('d.m.Y') }}</td>
-                        <td>—</td>
+                        <td>
+                            <a href="{{ route('document.download', $doc->id) }}" class="btn btn-sm btn-primary">
+                                <i class="fas fa-download"></i> {{ __('messages.download') }}
+                            </a>
+                        </td>
                     </tr>
                 @empty
                     <tr>
@@ -218,6 +223,28 @@
             </table>
         </div>
         <button id="uploadButton" class="btn btn-primary mt-3">{{ __('messages.upload_new') }}</button>
+    </div>
+    <!-- Форма загрузки документа (скрыта по умолчанию) -->
+    <div id="uploadForm" style="display: none; margin-top: 20px;">
+        <form action="{{ route('document.upload') }}" method="POST" enctype="multipart/form-data">
+            @csrf
+            <div class="mb-2">
+                <label for="documentType" class="form-label">{{ __('messages.document_type') }}:</label>
+                <select name="documentType" id="documentType" class="form-control" required>
+                    <option value="">{{ __('messages.select_document_type') }}</option>
+                    <option value="certificate">{{ __('messages.certificate') }}</option>
+                    <option value="id">{{ __('messages.identity_document') }}</option>
+                    <option value="quota">{{ __('messages.quota_document') }}</option>
+                    <option value="other">{{ __('messages.other') }}</option>
+                </select>
+            </div>
+            <div class="mb-2">
+                <label for="documentFile" class="form-label">{{ __('messages.select_file') }}:</label>
+                <input type="file" name="documentFile" id="documentFile" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-success">{{ __('messages.upload') }}</button>
+            <button type="button" id="cancelUpload" class="btn btn-secondary">{{ __('messages.cancel') }}</button>
+        </form>
     </div>
     <div id="financeSection" class="main-content" style="display: none;">
         <h2>{{ __('messages.finance_section_title') }}</h2>
@@ -293,18 +320,6 @@
                 </table>
             </div>
         </div>
-    </div>
-    <!-- Форма загрузки документа (скрыта по умолчанию) -->
-    <div id="uploadForm" style="display: none; margin-top: 20px;">
-        <form action="{{ route('document.upload') }}" method="POST" enctype="multipart/form-data">
-            @csrf
-            <div class="mb-2">
-                <label for="documentFile" class="form-label">{{ __('messages.select_file') }}:</label>
-                <input type="file" name="documentFile" id="documentFile" class="form-control">
-            </div>
-            <button type="submit" class="btn btn-success">{{ __('messages.upload') }}</button>
-            <button type="button" id="cancelUpload" class="btn btn-secondary">{{ __('messages.cancel') }}</button>
-        </form>
     </div>
     <!-- Запросы на ремонт -->
     <div class="flex space-x-6 items-start main-content" id="repair-list" style="display: none;">

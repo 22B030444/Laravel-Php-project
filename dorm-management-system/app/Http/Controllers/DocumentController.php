@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Document;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class DocumentController extends Controller
 {
@@ -51,32 +52,56 @@ class DocumentController extends Controller
             return back()->with('error', 'Ошибка загрузки: ' . $e->getMessage());
         }
     }
+    public function download(Document $document)
+    {
+        if ($document->student_id !== auth()->id()) {
+            abort(403);
+        }
+
+        return Storage::disk('public')->download($document->file_path, $document->file_name);
+    }
     public function upload(Request $request)
     {
-        $request->validate([
-            'documentFile' => 'required',
-        ]);
+        try {
+            $request->validate([
+                'documentFile' => 'required|file|mimes:jpg,jpeg,png,pdf,doc,docx',
+                'documentType' => 'required|string'
+            ]);
 
-        if (!$request->hasFile('documentFile')) {
-            return back()->with('error', 'Файл не выбран!');
+            if (!$request->hasFile('documentFile')) {
+                return back()->with('error', 'Файл не выбран!');
+            }
+
+            $file = $request->file('documentFile');
+            $path = $file->store('documents', 'public');
+
+            $document = Document::create([
+                'student_id' => Auth::id(),
+                'file_name' => $file->getClientOriginalName(),
+                'file_path' => $path,
+                'type' => $request->documentType
+            ]);
+
+            return redirect()->back()->with('success', 'Документ успешно загружен!');
+
+        } catch (\Exception $e) {
+            \Log::error('Ошибка при загрузке документа:', ['error' => $e->getMessage()]);
+            return back()->with('error', 'Ошибка загрузки: ' . $e->getMessage());
+        }
+    }
+    public function getUserDocuments($userId)
+    {
+        $documents = Document::where('student_id', $userId)->get();
+        return response()->json($documents);
+    }
+
+    public function downloadForManager(Document $document)
+    {
+        if (auth()->user()->role !== 'manager') {
+            abort(403);
         }
 
-        $file = $request->file('documentFile');
-        $student_id = auth()->id();
-        if (!$student_id) {
-            return back()->with('error', 'Ошибка: студент не найден!');
-        }
-
-        $document = (new Document())->upload($file, $student_id);
-
-
-        if (!$document) {
-            return back()->with('error', 'Ошибка при сохранении документа в БД!');
-        }
-
-        return redirect()->route('student.personal')
-            ->with('successType', 'document_uploaded')
-            ->with('success', 'Документ успешно загружен!');
+        return Storage::disk('public')->download($document->file_path, $document->file_name);
     }
 
 }
